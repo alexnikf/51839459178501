@@ -1,48 +1,28 @@
 #!/bin/bash
-
 set -e
 
+# Скачиваем и патчим установщик WireGuard
+wget -q https://git.io/wireguard -O wireguard-install.sh
+sed -i 's/10\.7\.0/192.168.10/g' wireguard-install.sh
+
+# Запускаем установку
+bash wireguard-install.sh
+
+# Показываем конфиг клиента
 echo
-read -p "Enter last octet for WireGuard subnet (XXX in 192.168.XXX.0/24): " OCTET
+echo "[📄] WireGuard config (user):"
+cat /root/user.conf || echo "[!] user.conf not found"
 
-if [[ ! "$OCTET" =~ ^[0-9]{1,3}$ ]] || (( OCTET < 1 || OCTET > 254 )); then
-    echo "[ERROR] Invalid subnet octet. Must be number 1–254."
-    exit 1
-fi
+# Проверка статуса
+echo
+echo -n "Port: "
+ss -tnlp | grep sshd | awk '{print $4}' | sed 's/.*://g' | sort -u
 
-SUBNET="192.168.$OCTET"
-echo "[INFO] Subnet will be $SUBNET.0/24"
+sysctl -p | grep net.ipv4.icmp_echo_ignore_all
 
-INSTALLER="wireguard-install.sh"
-
-if [[ ! -f $INSTALLER ]]; then
-    echo "[INFO] Downloading WireGuard installer..."
-    wget -q https://git.io/wireguard -O "$INSTALLER"
-    chmod +x "$INSTALLER"
-fi
-
-sed -i "s/10\\.7\\.0/$SUBNET/g" "$INSTALLER"
-
-# если WireGuard уже установлен, просто добавим клиента
-if [[ -f /etc/wireguard/wg0.conf ]]; then
-    echo "[INFO] WireGuard already installed. Adding client 'user'..."
-    bash "$INSTALLER" --add-client user --client-port 51829 --client-dns 2
+if fail2ban-client status sshd &>/dev/null; then
+    echo "fail2ban: yes"
 else
-    export NEEDRESTART_MODE=a
-    echo
-    echo "[ACTION REQUIRED] Please answer ONLY 'Which IPv4 address should be used?'"
-    (
-      sleep 1
-      echo ""      # default port
-      sleep 1
-      echo "user"
-      sleep 1
-      echo "2"
-      sleep 1
-      echo ""
-    ) | bash "$INSTALLER"
+    echo "fail2ban: no"
 fi
 
-echo
-echo "[✅] Done! Client config for 'user':"
-cat /root/user.conf
