@@ -25,7 +25,7 @@ else
   if grep -q "^Port" "$SSHD_CONFIG"; then
     sed -i "s/^Port .*/Port $SSH_PORT/" "$SSHD_CONFIG"
   else
-    echo "Port $SSH_PORT" >> "$SSHD_CONFIG"https://github.com/alexnikf/51839459178501/tree/main
+    echo "Port $SSH_PORT" >> "$SSHD_CONFIG"
   fi
   log "Restarting SSH service..."
   systemctl restart ssh || systemctl restart sshd || error "Failed to restart SSH"
@@ -59,3 +59,4 @@ systemctl restart fail2ban
 
 log "Done! SSH is now on port $SSH_PORT, ICMP echo is disabled, fail2ban is active."
 log "Verify connection with: ssh -p $SSH_PORT user@host"
+
