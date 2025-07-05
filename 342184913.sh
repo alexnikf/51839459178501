@@ -13,6 +13,15 @@ error() {
   echo -e "\e[31m[ERROR]\e[0m $1" >&2
 }
 
+log "Checking for curl..."
+if ! command -v curl >/dev/null 2>&1; then
+  log "curl not found. Installing..."
+  apt update -y
+  apt install -y curl
+else
+  log "curl is already installed."
+fi
+
 log "Updating package list..."
 apt update -y
 
@@ -59,4 +68,5 @@ systemctl restart fail2ban
 
 log "Done! SSH is now on port $SSH_PORT, ICMP echo is disabled, fail2ban is active."
 log "Verify connection with: ssh -p $SSH_PORT user@host"
+
 
